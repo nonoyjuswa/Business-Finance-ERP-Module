@@ -1285,6 +1285,7 @@ public class Main extends javax.swing.JFrame {
             @Override
             public void windowClosed(java.awt.event.WindowEvent e) {
                 loadProductTable(); // refresh product list in Main
+                loadGLTable();
             }
         });
         dialog.setVisible(true);
@@ -1307,6 +1308,7 @@ public class Main extends javax.swing.JFrame {
             @Override
             public void windowClosed(java.awt.event.WindowEvent e) {
                loadTransactionTable(); // refresh product list in Main
+               loadGLTable();
            }
        });
        dialog.setVisible(true);

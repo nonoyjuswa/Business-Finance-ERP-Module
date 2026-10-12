@@ -9,6 +9,8 @@ import financeerp.model.Product;
 import financeerp.model.StockTransaction;
 import java.time.LocalDate;
 import java.util.List;
+import financeerp.dao.GeneralLedgerDAO;
+import java.sql.SQLException;
 
 /**
  *
@@ -16,6 +18,24 @@ import java.util.List;
  */
 public class InventoryController {
     private InventoryDAO inventoryDAO;
+    private static final String ACC_INVENTORY = "Inventory";
+    private static final String ACC_CASH = "Cash";
+    private static final String ACC_EQUITY = "Owner's Equity";
+    private static final String ACC_COGS = "Cost of Goods Sold";
+
+    // Posts a balanced debit/credit pair to the General Ledger
+    private void postInventoryGL(String debitAcc, String creditAcc, double amount, String notes) {
+        if (amount <= 0) return;
+        try {
+            new GeneralLedgerDAO().postToGL(
+                LocalDate.now().toString(),
+                debitAcc, amount,
+                creditAcc, amount,
+                "Inventory", notes);
+        } catch (SQLException e) {
+            System.err.println("⚠ GL posting failed: " + e.getMessage());
+        }
+    }
 
     public InventoryController() {
         this.inventoryDAO = new InventoryDAO();
@@ -37,7 +57,13 @@ public class InventoryController {
         }
 
         Product product = new Product(0, name, category, price, initialStock, "ACTIVE");
-        return inventoryDAO.addProduct(product);
+        boolean success = inventoryDAO.addProduct(product);
+
+        if (success && initialStock > 0) {
+            postInventoryGL(ACC_INVENTORY, ACC_EQUITY, price * initialStock,
+                "Initial stock: " + name + " x" + initialStock);
+        }
+        return success;
     }
 
     // ✅ Get all products
@@ -68,10 +94,18 @@ public class InventoryController {
             return false;
         }
 
+        Product product = inventoryDAO.getProductById(productId);
+        if (product == null) {
+            System.out.println("❌ Product not found.");
+            return false;
+        }
+
         StockTransaction tx = new StockTransaction(productId, "IN", quantity, LocalDate.now(), remarks);
         boolean success = inventoryDAO.addTransaction(tx);
-        if (success) {
-            inventoryDAO.updateStock(productId, quantity, "IN");
+        if (success && inventoryDAO.updateStock(productId, quantity, "IN")) {
+            postInventoryGL(ACC_INVENTORY, ACC_CASH, quantity * product.getUnitPrice(),
+                "Stock IN: " + product.getProductName() + " x" + quantity
+                + (remarks.isEmpty() ? "" : " (" + remarks + ")"));
         }
         return success;
     }
@@ -102,8 +136,10 @@ public class InventoryController {
 
         StockTransaction tx = new StockTransaction(productId, "OUT", quantity, LocalDate.now(), remarks);
         boolean success = inventoryDAO.addTransaction(tx);
-        if (success) {
-            inventoryDAO.updateStock(productId, quantity, "OUT");
+        if (success && inventoryDAO.updateStock(productId, quantity, "OUT")) {
+            postInventoryGL(ACC_COGS, ACC_INVENTORY, quantity * product.getUnitPrice(),
+                "Stock OUT: " + product.getProductName() + " x" + quantity
+                + (remarks.isEmpty() ? "" : " (" + remarks + ")"));
         }
         return success;
     }
