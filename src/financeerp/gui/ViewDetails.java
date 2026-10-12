@@ -6,6 +6,11 @@
 package financeerp.gui;
 
 import financeerp.controller.InventoryController;
+import financeerp.model.Product;
+import financeerp.model.StockTransaction;
+import java.util.List;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
 
 /**
  *
@@ -22,6 +27,54 @@ public class ViewDetails extends javax.swing.JDialog {
         initComponents();
     }
 
+    public ViewDetails(java.awt.Frame parent, boolean modal, int productId) {
+        this(parent, modal);
+        this.productId = productId;
+        loadDetails();
+    }
+
+    private void loadDetails() {
+        InventoryController controller = new InventoryController();
+
+        Product p = controller.getProductById(productId);
+        if (p == null) {
+            JOptionPane.showMessageDialog(this, "❌ Product not found.");
+            dispose();
+            return;
+        }
+
+        // Product info
+        jLabel12.setText(p.getProductName());
+        jLabel13.setText(p.getCategory());
+        jLabel14.setText(String.format("₱%,.2f", p.getUnitPrice()));
+        jLabel15.setText(String.valueOf(p.getCurrentStock()));
+
+        // Transaction history
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        model.setRowCount(0);
+
+        int totalIn = 0, totalOut = 0;
+        for (StockTransaction tx : controller.getTransactionsByProduct(productId)) {
+            model.addRow(new Object[]{
+                tx.getTransactionDate(),
+                tx.getTransactionType(),
+                tx.getQuantity(),
+                tx.getRemarks()
+            });
+            if ("IN".equals(tx.getTransactionType())) {
+                totalIn += tx.getQuantity();
+            } else if ("OUT".equals(tx.getTransactionType())) {
+                totalOut += tx.getQuantity();
+            }
+        }
+
+        // Totals
+        jLabel9.setText(String.valueOf(totalIn));
+        jLabel10.setText(String.valueOf(totalOut));
+        jLabel11.setText(String.valueOf(p.getCurrentStock()));
+
+        setLocationRelativeTo(getParent());
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always

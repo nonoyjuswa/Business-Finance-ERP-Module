@@ -91,4 +91,12 @@ public class InventoryController {
         }
         return success;
     }
+    
+    public Product getProductById(int productId) {
+        return inventoryDAO.getProductById(productId);
+    }
+
+    public List<StockTransaction> getTransactionsByProduct(int productId) {
+        return inventoryDAO.getTransactionsByProduct(productId);
+    }
 }

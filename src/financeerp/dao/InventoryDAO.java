@@ -91,4 +91,55 @@ public class InventoryDAO {
             return false;
         }
     }
+    
+    // ✅ Get a single product by ID (no status filter, so inactive ones still open)
+    public Product getProductById(int productId) {
+        String sql = "SELECT * FROM Products WHERE product_id=?";
+        try (Connection conn = FinanceERP.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, productId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new Product(
+                        rs.getInt("product_id"),
+                        rs.getString("product_name"),
+                        rs.getString("category"),
+                        rs.getDouble("unit_price"),
+                        rs.getInt("current_stock"),
+                        rs.getString("status")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // ✅ Get all transactions for one product (newest first)
+    public List<StockTransaction> getTransactionsByProduct(int productId) {
+        List<StockTransaction> list = new ArrayList<>();
+        String sql = "SELECT * FROM StockTransactions WHERE product_id=? " +
+                     "ORDER BY transaction_date DESC, transaction_id DESC";
+        try (Connection conn = FinanceERP.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, productId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    StockTransaction tx = new StockTransaction(
+                        rs.getInt("product_id"),
+                        rs.getString("transaction_type"),
+                        rs.getInt("quantity"),
+                        rs.getDate("transaction_date").toLocalDate(),
+                        rs.getString("remarks")
+                    );
+                    tx.setTransactionId(rs.getInt("transaction_id"));
+                    list.add(tx);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
 }
