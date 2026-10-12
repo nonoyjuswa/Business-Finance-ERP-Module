@@ -115,6 +115,22 @@ public class InventoryDAO {
         }
         return null;
     }
+    
+    public boolean updateProduct(Product product) {
+        String sql = "UPDATE Products SET product_name=?, category=?, unit_price=?, status=? WHERE product_id=?";
+        try (Connection conn = FinanceERP.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, product.getProductName());
+            ps.setString(2, product.getCategory());
+            ps.setDouble(3, product.getUnitPrice());
+            ps.setString(4, product.getStatus());
+            ps.setInt(5, product.getProductId());
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 
     // ✅ Get all transactions for one product (newest first)
     public List<StockTransaction> getTransactionsByProduct(int productId) {

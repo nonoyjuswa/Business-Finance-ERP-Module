@@ -7,6 +7,7 @@ package financeerp.gui;
 import financeerp.FinanceERP;
 import financeerp.model.Product;
 import financeerp.gui.ViewDetails;
+import financeerp.gui.EditProduct;
 import financeerp.controller.ExpenseController;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -1293,17 +1294,23 @@ public class Main extends javax.swing.JFrame {
 
     private void jButton12ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton12ActionPerformed
         // TODO add your handling code here:
-            int row = TableProduct.getSelectedRow();
-            if (row >= 0) {
-                int productId = (int) TableProduct.getValueAt(row, 0); // assuming first column is product_id
-                //EditProduct dialog = new EditProduct(this, true, productId);
-                //dialog.setVisible(true);
+        int row = TableProduct.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "❌ Please select a product to edit.");
+            return;
+        }
 
-                // Refresh after closing
-                loadProductTable();
-            } else {
-                JOptionPane.showMessageDialog(this, "❌ Please select a product to edit.");
-            }
+        int productId = Integer.parseInt(TableProduct.getValueAt(row, 0).toString());
+        Product product = new InventoryController().getProductById(productId);
+        if (product == null) {
+            JOptionPane.showMessageDialog(this, "❌ Product not found.");
+            return;
+        }
+
+        EditProduct dialog = new EditProduct(this, true, product);
+        dialog.setVisible(true); // modal: blocks until closed
+
+        loadProductTable(); // refresh after closing
     }//GEN-LAST:event_jButton12ActionPerformed
 
     /**

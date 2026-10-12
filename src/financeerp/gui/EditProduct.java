@@ -5,11 +5,17 @@
  */
 package financeerp.gui;
 
+import financeerp.controller.InventoryController;
+import financeerp.model.Product;
+import javax.swing.JOptionPane;
+
 /**
  *
  * @author Juswa
  */
 public class EditProduct extends javax.swing.JDialog {
+    
+    private Product product;
 
     /**
      * Creates new form EditProduct
@@ -17,6 +23,63 @@ public class EditProduct extends javax.swing.JDialog {
     public EditProduct(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
         initComponents();
+    }
+    
+    public EditProduct(java.awt.Frame parent, boolean modal, Product product) {
+        this(parent, modal);
+        this.product = product;
+        setTitle("Edit Product");
+
+        // Status choices
+        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "ACTIVE", "INACTIVE" }));
+
+        // Pre-fill fields
+        jTextField3.setText(product.getProductName());
+        jTextField2.setText(product.getCategory());
+        jTextField1.setText(String.valueOf(product.getUnitPrice()));
+        jSpinner1.setValue(product.getCurrentStock());
+        jSpinner1.setEnabled(false); // stock is changed via Stock In/Out only
+        jComboBox1.setSelectedItem(product.getStatus());
+
+        getRootPane().setDefaultButton(jButton1);
+
+        setLocationRelativeTo(parent);
+    }
+    
+    private void saveProduct() {
+        try {
+            String name = jTextField3.getText().trim();
+            String category = jTextField2.getText().trim();
+            String priceText = jTextField1.getText().trim();
+
+            if (name.isEmpty() || category.isEmpty() || priceText.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please fill in all fields.");
+                return;
+            }
+
+            double price = Double.parseDouble(priceText);
+            if (price < 0) {
+                JOptionPane.showMessageDialog(this, "Price cannot be negative.");
+                return;
+            }
+
+            String status = jComboBox1.getSelectedItem().toString();
+
+            InventoryController controller = new InventoryController();
+            boolean success = controller.updateProduct(
+                    product.getProductId(), name, category, price, status);
+
+            if (success) {
+                JOptionPane.showMessageDialog(this, "Product updated successfully!");
+                dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to update product.");
+            }
+        } catch (NumberFormatException nfe) {
+            JOptionPane.showMessageDialog(this, "Price must be a valid number.");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Unexpected error: " + e.getMessage());
+        }
     }
 
     /**
@@ -58,14 +121,36 @@ public class EditProduct extends javax.swing.JDialog {
         jLabel6.setText("Status:");
 
         jButton1.setText("Save");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
 
         jButton2.setText("Cancel");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
 
         jComboBox1.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
 
         jTextField1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jTextField1ActionPerformed(evt);
+            }
+        });
+
+        jTextField2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField2ActionPerformed(evt);
+            }
+        });
+
+        jTextField3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField3ActionPerformed(evt);
             }
         });
 
@@ -141,6 +226,24 @@ public class EditProduct extends javax.swing.JDialog {
     private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextField1ActionPerformed
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        // TODO add your handling code here:
+        saveProduct();
+    }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void jTextField3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField3ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField3ActionPerformed
+
+    private void jTextField2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField2ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField2ActionPerformed
+
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        // TODO add your handling code here:
+        dispose();
+    }//GEN-LAST:event_jButton2ActionPerformed
 
     /**
      * @param args the command line arguments

@@ -95,6 +95,27 @@ public class InventoryController {
     public Product getProductById(int productId) {
         return inventoryDAO.getProductById(productId);
     }
+    
+    public boolean updateProduct(int productId, String name, String category, double price, String status) {
+        if (name == null || name.trim().isEmpty()) {
+            System.out.println("❌ Product name cannot be empty.");
+            return false;
+        }
+        if (price < 0) {
+            System.out.println("❌ Price cannot be negative.");
+            return false;
+        }
+        Product existing = inventoryDAO.getProductById(productId);
+        if (existing == null) {
+            System.out.println("❌ Product not found.");
+            return false;
+        }
+        existing.setProductName(name.trim());
+        existing.setCategory(category);
+        existing.setUnitPrice(price);
+        existing.setStatus(status);
+        return inventoryDAO.updateProduct(existing);
+    }
 
     public List<StockTransaction> getTransactionsByProduct(int productId) {
         return inventoryDAO.getTransactionsByProduct(productId);
