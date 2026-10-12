@@ -44,6 +44,22 @@ public class InventoryController {
     public List<Product> getProducts() {
         return inventoryDAO.getAllProducts();
     }
+    
+    // All products, including inactive (for the Inventory table)
+    public List<Product> getAllProductsIncludingInactive() {
+        return inventoryDAO.getAllProductsIncludingInactive();
+    }
+
+    // Flip ACTIVE <-> INACTIVE. Returns the new status, or null on failure.
+    public String toggleProductStatus(int productId) {
+        Product existing = inventoryDAO.getProductById(productId);
+        if (existing == null) {
+            System.out.println("❌ Product not found.");
+            return null;
+        }
+        String newStatus = "ACTIVE".equalsIgnoreCase(existing.getStatus()) ? "INACTIVE" : "ACTIVE";
+        return inventoryDAO.setProductStatus(productId, newStatus) ? newStatus : null;
+    }
 
     // ✅ Stock IN
     public boolean stockIn(int productId, int quantity, String remarks) {

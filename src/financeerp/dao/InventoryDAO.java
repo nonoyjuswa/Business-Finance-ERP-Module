@@ -188,4 +188,42 @@ public class InventoryDAO {
         }
         return new int[]{0, 0, 0, 0};
     }
+    
+    // ✅ Soft delete: mark product as INACTIVE (keeps transaction history intact)
+    // ✅ Get ALL products (active + inactive), used only for the Inventory table in Main
+    public List<Product> getAllProductsIncludingInactive() {
+        List<Product> products = new ArrayList<>();
+        String sql = "SELECT * FROM Products ORDER BY product_id";
+        try (Connection conn = FinanceERP.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                products.add(new Product(
+                    rs.getInt("product_id"),
+                    rs.getString("product_name"),
+                    rs.getString("category"),
+                    rs.getDouble("unit_price"),
+                    rs.getInt("current_stock"),
+                    rs.getString("status")
+                ));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return products;
+    }
+
+    // ✅ Set a product's status (ACTIVE / INACTIVE)
+    public boolean setProductStatus(int productId, String status) {
+        String sql = "UPDATE Products SET status=? WHERE product_id=?";
+        try (Connection conn = FinanceERP.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, status);
+            ps.setInt(2, productId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

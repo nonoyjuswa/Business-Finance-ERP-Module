@@ -37,6 +37,10 @@ public class Main extends javax.swing.JFrame {
         loadGLTable();
         loadProductTable();
         loadTransactionTable();
+        jButton13.setText("Toggle Status");
+        TableProduct.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) updateToggleButtonLabel();
+        });
     }
     private void loadAPTable() {
         try (Connection conn = FinanceERP.getConnection();
@@ -127,7 +131,7 @@ public class Main extends javax.swing.JFrame {
     
     public void loadProductTable() {
         InventoryController controller = new InventoryController();
-        java.util.List<Product> products = controller.getProducts();
+        java.util.List<Product> products = controller.getAllProductsIncludingInactive();
 
         DefaultTableModel model = (DefaultTableModel) TableProduct.getModel();
         model.setRowCount(0); // clear old rows
@@ -143,6 +147,17 @@ public class Main extends javax.swing.JFrame {
             });
         }
         updateInventorySummary();
+    }
+    
+    // Button text follows the selected row: "Deactivate" or "Activate"
+    private void updateToggleButtonLabel() {
+        int row = TableProduct.getSelectedRow();
+        if (row < 0) {
+            jButton13.setText("Toggle Status");
+            return;
+        }
+        boolean isActive = "ACTIVE".equalsIgnoreCase(TableProduct.getValueAt(row, 5).toString());
+        jButton13.setText(isActive ? "Deactivate" : "Activate");
     }
     
     public void loadTransactionTable() {
@@ -873,6 +888,11 @@ public class Main extends javax.swing.JFrame {
         });
 
         jButton13.setText("X Delete Product");
+        jButton13.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton13ActionPerformed(evt);
+            }
+        });
 
         jButton15.setText("Stock In/Out");
         jButton15.addActionListener(new java.awt.event.ActionListener() {
@@ -1312,6 +1332,40 @@ public class Main extends javax.swing.JFrame {
 
         loadProductTable(); // refresh after closing
     }//GEN-LAST:event_jButton12ActionPerformed
+
+    private void jButton13ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton13ActionPerformed
+        // TODO add your handling code here:
+        int row = TableProduct.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "❌ Please select a product first.");
+            return;
+        }
+
+        int productId = Integer.parseInt(TableProduct.getValueAt(row, 0).toString());
+        String name = TableProduct.getValueAt(row, 1).toString();
+        int stock = Integer.parseInt(TableProduct.getValueAt(row, 4).toString());
+        boolean isActive = "ACTIVE".equalsIgnoreCase(TableProduct.getValueAt(row, 5).toString());
+
+        // Only confirm when deactivating
+        if (isActive) {
+            String message = "Deactivate \"" + name + "\"?\n"
+                    + "It will be unavailable for Stock In/Out, but its history is kept.";
+            if (stock > 0) {
+                message += "\n\n⚠ This product still has " + stock + " units in stock.";
+            }
+            int choice = JOptionPane.showConfirmDialog(this, message,
+                    "Confirm Deactivate", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (choice != JOptionPane.YES_OPTION) return;
+        }
+
+        String newStatus = new InventoryController().toggleProductStatus(productId);
+        if (newStatus != null) {
+            loadProductTable();
+            updateToggleButtonLabel();
+        } else {
+            JOptionPane.showMessageDialog(this, "Failed to update product status.");
+        }
+    }//GEN-LAST:event_jButton13ActionPerformed
 
     /**
      * @param args the command line arguments
