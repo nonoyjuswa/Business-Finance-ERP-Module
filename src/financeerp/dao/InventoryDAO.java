@@ -142,4 +142,34 @@ public class InventoryDAO {
         }
         return list;
     }
+    
+    // ✅ Summary totals for the Inventory tab
+// Returns {totalItems, totalIn, totalOut, currentStock}
+    public int[] getInventoryTotals() {
+        String sql =
+            "SELECT " +
+            " (SELECT COUNT(*) FROM Products WHERE status='ACTIVE') AS total_items, " +
+            " (SELECT COALESCE(SUM(current_stock),0) FROM Products WHERE status='ACTIVE') AS current_stock, " +
+            " (SELECT COALESCE(SUM(t.quantity),0) FROM StockTransactions t " +
+            "    JOIN Products p ON t.product_id = p.product_id " +
+            "    WHERE t.transaction_type='IN' AND p.status='ACTIVE') AS total_in, " +
+            " (SELECT COALESCE(SUM(t.quantity),0) FROM StockTransactions t " +
+            "    JOIN Products p ON t.product_id = p.product_id " +
+            "    WHERE t.transaction_type='OUT' AND p.status='ACTIVE') AS total_out";
+        try (Connection conn = FinanceERP.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                return new int[]{
+                    rs.getInt("total_items"),
+                    rs.getInt("total_in"),
+                    rs.getInt("total_out"),
+                    rs.getInt("current_stock")
+                };
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return new int[]{0, 0, 0, 0};
+    }
 }

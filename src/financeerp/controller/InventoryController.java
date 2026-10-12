@@ -99,4 +99,8 @@ public class InventoryController {
     public List<StockTransaction> getTransactionsByProduct(int productId) {
         return inventoryDAO.getTransactionsByProduct(productId);
     }
+    
+    public int[] getInventoryTotals() {
+        return inventoryDAO.getInventoryTotals();
+    }
 }
