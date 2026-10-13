@@ -3,11 +3,13 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/Juswa/Documents/NetBeansProjects/FinanceERP/src/financeerp/controller/ExpenseController.java</file>
-            <file>file:/C:/Users/Juswa/Documents/NetBeansProjects/FinanceERP/src/financeerp/dao/ExpenseDAO.java</file>
-            <file>file:/C:/Users/Juswa/Documents/NetBeansProjects/FinanceERP/src/financeerp/dao/GeneralLedgerDAO.java</file>
-            <file>file:/C:/Users/Juswa/Documents/NetBeansProjects/FinanceERP/src/financeerp/FinanceERP.java</file>
-            <file>file:/C:/Users/Juswa/Documents/NetBeansProjects/FinanceERP/src/financeerp/Main.java</file>
+            <file>file:/C:/Users/Juswa/Documents/NetBeansProjects/FinanceERP/src/financeerp/gui/ViewDetails.java</file>
+            <file>file:/C:/Users/Juswa/Documents/NetBeansProjects/FinanceERP/src/financeerp/controller/InventoryController.java</file>
+            <file>file:/C:/Users/Juswa/Documents/NetBeansProjects/FinanceERP/src/financeerp/gui/Main.java</file>
+            <file>file:/C:/Users/Juswa/Documents/NetBeansProjects/FinanceERP/src/financeerp/gui/AddProduct.java</file>
+            <file>file:/C:/Users/Juswa/Documents/NetBeansProjects/FinanceERP/src/financeerp/gui/EditProduct.java</file>
+            <file>file:/C:/Users/Juswa/Documents/NetBeansProjects/FinanceERP/src/financeerp/gui/StockInOut.java</file>
+            <file>file:/C:/Users/Juswa/Documents/NetBeansProjects/FinanceERP/src/financeerp/dao/InventoryDAO.java</file>
         </group>
     </open-files>
 </project-private>

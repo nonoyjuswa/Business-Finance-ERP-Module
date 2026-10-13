@@ -24,6 +24,34 @@ public class AddProduct extends javax.swing.JDialog {
             new String[] { "Accessories", "Peripherals", "Storage", "Furniture", "Supplies" }
         ));
     }
+    
+    private void saveProduct() {
+        try {
+            String name = jTextField1.getText().trim();
+            String category = jComboBox1.getSelectedItem().toString();
+            String priceText = jTextField2.getText().trim();
+            String stockText = jTextField3.getText().trim();
+
+            if (name.isEmpty() || priceText.isEmpty() || stockText.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Please fill in all fields.");
+                return;
+            }
+
+            boolean success = new InventoryController().addProduct(
+                    name, category, Double.parseDouble(priceText), Integer.parseInt(stockText));
+
+            if (success) {
+                JOptionPane.showMessageDialog(this, "Product added successfully!");
+                dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to add product.");
+            }
+        } catch (NumberFormatException nfe) {
+            JOptionPane.showMessageDialog(this, "Price and Stock must be valid numbers.");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Unexpected error: " + e.getMessage());
+        }
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -159,35 +187,7 @@ public class AddProduct extends javax.swing.JDialog {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         // TODO add your handling code here:
-        try {
-            String name = jTextField1.getText().trim();
-            String category = jComboBox1.getSelectedItem().toString();
-            String priceText = jTextField2.getText().trim();
-            String stockText = jTextField3.getText().trim();
-
-            // ✅ Validation
-            if (name.isEmpty() || priceText.isEmpty() || stockText.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Please fill in all fields.");
-                return;
-            }
-
-            double price = Double.parseDouble(priceText);
-            int stock = Integer.parseInt(stockText);
-
-            InventoryController controller = new InventoryController();
-            boolean success = controller.addProduct(name, category, price, stock);
-
-            if (success) {
-                JOptionPane.showMessageDialog(this, "Product added successfully!");
-                dispose(); // close dialog
-            } else {
-                JOptionPane.showMessageDialog(this, "Failed to add product.");
-            }
-        } catch (NumberFormatException nfe) {
-            JOptionPane.showMessageDialog(this, "Price and Stock must be valid numbers.");
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Unexpected error: " + e.getMessage());
-        }
+        saveProduct();
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jTextField2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField2ActionPerformed

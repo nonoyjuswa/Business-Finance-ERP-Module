@@ -133,10 +133,11 @@ public class InventoryDAO {
     }
 
     // ✅ Get all transactions for one product (newest first)
+    // ✅ Get all stock transactions for one product (newest first)
     public List<StockTransaction> getTransactionsByProduct(int productId) {
         List<StockTransaction> list = new ArrayList<>();
-        String sql = "SELECT * FROM StockTransactions WHERE product_id=? " +
-                     "ORDER BY transaction_date DESC, transaction_id DESC";
+        String sql = "SELECT * FROM StockTransactions WHERE product_id=? "
+                   + "ORDER BY transaction_date DESC, transaction_id DESC";
         try (Connection conn = FinanceERP.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, productId);

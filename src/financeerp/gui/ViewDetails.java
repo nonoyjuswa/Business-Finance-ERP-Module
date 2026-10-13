@@ -27,54 +27,45 @@ public class ViewDetails extends javax.swing.JDialog {
         initComponents();
     }
 
-    public ViewDetails(java.awt.Frame parent, boolean modal, int productId) {
-        this(parent, modal);
-        this.productId = productId;
-        loadDetails();
+    // Used by Main when viewing a specific product
+public ViewDetails(java.awt.Frame parent, boolean modal, Product product) {
+    this(parent, modal);
+    this.productId = product.getProductId();
+    setTitle("Product Details");
+    loadDetails(product);
+    setLocationRelativeTo(parent);
+}
+
+private void loadDetails(Product product) {
+    // Product info
+    jLabel12.setText(product.getProductName());
+    jLabel13.setText(product.getCategory());
+    jLabel14.setText("₱" + String.format("%.2f", product.getUnitPrice()));
+    jLabel15.setText(String.valueOf(product.getCurrentStock()));
+
+    // Transaction history + totals
+    List<StockTransaction> history =
+            new InventoryController().getTransactionsForProduct(product.getProductId());
+
+    DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+    model.setRowCount(0);
+
+    int totalIn = 0, totalOut = 0;
+    for (StockTransaction tx : history) {
+        model.addRow(new Object[]{
+            tx.getTransactionDate(),
+            tx.getTransactionType(),
+            tx.getQuantity(),
+            tx.getRemarks()
+        });
+        if ("IN".equals(tx.getTransactionType())) totalIn += tx.getQuantity();
+        else totalOut += tx.getQuantity();
     }
 
-    private void loadDetails() {
-        InventoryController controller = new InventoryController();
-
-        Product p = controller.getProductById(productId);
-        if (p == null) {
-            JOptionPane.showMessageDialog(this, "❌ Product not found.");
-            dispose();
-            return;
-        }
-
-        // Product info
-        jLabel12.setText(p.getProductName());
-        jLabel13.setText(p.getCategory());
-        jLabel14.setText(String.format("₱%,.2f", p.getUnitPrice()));
-        jLabel15.setText(String.valueOf(p.getCurrentStock()));
-
-        // Transaction history
-        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
-        model.setRowCount(0);
-
-        int totalIn = 0, totalOut = 0;
-        for (StockTransaction tx : controller.getTransactionsByProduct(productId)) {
-            model.addRow(new Object[]{
-                tx.getTransactionDate(),
-                tx.getTransactionType(),
-                tx.getQuantity(),
-                tx.getRemarks()
-            });
-            if ("IN".equals(tx.getTransactionType())) {
-                totalIn += tx.getQuantity();
-            } else if ("OUT".equals(tx.getTransactionType())) {
-                totalOut += tx.getQuantity();
-            }
-        }
-
-        // Totals
-        jLabel9.setText(String.valueOf(totalIn));
-        jLabel10.setText(String.valueOf(totalOut));
-        jLabel11.setText(String.valueOf(p.getCurrentStock()));
-
-        setLocationRelativeTo(getParent());
-    }
+    jLabel9.setText(String.valueOf(totalIn));
+    jLabel10.setText(String.valueOf(totalOut));
+    jLabel11.setText(String.valueOf(product.getCurrentStock()));
+}
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always

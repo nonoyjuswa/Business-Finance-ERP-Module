@@ -38,6 +38,42 @@ public class StockInOut extends javax.swing.JDialog {
         group.add(jRadioButton1);
         group.add(jRadioButton2);
     }
+    
+    private void confirmTransaction() {
+        try {
+            Product selected = products.get(jComboBox1.getSelectedIndex());
+
+            if (!jRadioButton1.isSelected() && !jRadioButton2.isSelected()) {
+                JOptionPane.showMessageDialog(this, "Please select Stock IN or Stock OUT.");
+                return;
+            }
+
+            String qtyText = jTextField1.getText().trim();
+            if (qtyText.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Quantity cannot be empty.");
+                return;
+            }
+
+            int quantity = Integer.parseInt(qtyText);
+            String remarks = jTextField2.getText().trim();
+            InventoryController controller = new InventoryController();
+
+            boolean success = jRadioButton1.isSelected()
+                    ? controller.stockIn(selected.getProductId(), quantity, remarks)
+                    : controller.stockOut(selected.getProductId(), quantity, remarks);
+
+            if (success) {
+                JOptionPane.showMessageDialog(this, "Transaction successful!");
+                dispose(); // Main refreshes its tables after this dialog closes
+            } else {
+                JOptionPane.showMessageDialog(this, "Transaction failed.");
+            }
+        } catch (NumberFormatException nfe) {
+            JOptionPane.showMessageDialog(this, "Quantity must be a valid number.");
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Unexpected error: " + e.getMessage());
+        }
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -171,68 +207,7 @@ public class StockInOut extends javax.swing.JDialog {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-            try {
-                // ✅ Get selected product
-                String selectedName = jComboBox1.getSelectedItem().toString();
-                Product selectedProduct = products.stream()
-                    .filter(p -> p.getProductName().equals(selectedName))
-                    .findFirst()
-                    .orElse(null);
-
-                if (selectedProduct == null) {
-                    JOptionPane.showMessageDialog(this, "❌ Product not found.");
-                    return;
-                }
-
-                int productId = selectedProduct.getProductId(); // ✅ real ID from DB
-
-                // (Better: map productName → productId from DB, but this works if IDs match order)
-
-                // ✅ Validate transaction type
-                String type = null;
-                if (jRadioButton1.isSelected()) {
-                    type = "IN";
-                } else if (jRadioButton2.isSelected()) {
-                    type = "OUT";
-                } else {
-                    JOptionPane.showMessageDialog(this, "Please select Stock IN or Stock OUT.");
-                    return;
-                }
-
-                // ✅ Validate quantity
-                String qtyText = jTextField1.getText().trim();
-                if (qtyText.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "Quantity cannot be empty.");
-                    return;
-                }
-                int quantity = Integer.parseInt(qtyText);
-
-                // ✅ Remarks (optional)
-                String remarks = jTextField2.getText().trim();
-
-                // ✅ Call controller
-                InventoryController controller = new InventoryController();
-                boolean success = false;
-                if (type.equals("IN")) {
-                    success = controller.stockIn(productId, quantity, remarks);
-                } else {
-                    success = controller.stockOut(productId, quantity, remarks);
-                }
-
-                // ✅ Feedback
-                if (success) {
-                    JOptionPane.showMessageDialog(this, "Transaction successful!");
-                    ((Main)getParent()).loadProductTable(); // refresh product list in Main
-                    dispose();
-                } else {
-                    JOptionPane.showMessageDialog(this, "Transaction failed.");
-                }
-
-            } catch (NumberFormatException nfe) {
-                JOptionPane.showMessageDialog(this, "Quantity must be a valid number.");
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(this, "Unexpected error: " + e.getMessage());
-            }
+        confirmTransaction();
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jRadioButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jRadioButton2ActionPerformed

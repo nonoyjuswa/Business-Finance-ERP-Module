@@ -187,6 +187,117 @@ public class Main extends javax.swing.JFrame {
         }
     }
     
+    private void addExpense() {
+        try {
+            String category = txtCategory.getText().trim();
+            double amount = Double.parseDouble(txtAmount2.getText().trim());
+            String notes = txtNotes.getText().trim();
+
+            new ExpenseController().addExpense(category, amount, LocalDate.now().toString(), notes);
+
+            lblStatus2.setText("Expense added successfully!");
+            loadExpenseTable();
+            loadGLTable();
+        } catch (NumberFormatException e) {
+            lblStatus2.setText("Amount must be a valid number.");
+        }
+    }
+
+    private void showMonthlyExpenseTotal() {
+        String sql = "SELECT SUM(Amount) AS Total FROM Expenses "
+                   + "WHERE MONTH(Date) = MONTH(CURRENT_DATE) AND YEAR(Date) = YEAR(CURRENT_DATE)";
+        try (Connection conn = FinanceERP.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                lblStatus2.setText("Total expenses this month: ₱" + rs.getDouble("Total"));
+            }
+        } catch (Exception e) {
+            System.err.println("Totals Error: " + e.getMessage());
+            lblStatus2.setText("Error calculating totals.");
+        }
+    }
+    
+    // One place that refreshes everything an inventory change can affect
+    private void refreshInventory() {
+        loadProductTable();
+        loadTransactionTable();
+        loadGLTable();
+    }
+
+    private void openAddProductDialog() {
+        new AddProduct(this, true).setVisible(true); // modal: waits until closed
+        refreshInventory();
+    }
+
+    private void openStockInOutDialog() {
+        new StockInOut(this, true).setVisible(true);
+        refreshInventory();
+    }
+
+    private void openEditProductDialog() {
+        int row = TableProduct.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "❌ Please select a product to edit.");
+            return;
+        }
+        int productId = Integer.parseInt(TableProduct.getValueAt(row, 0).toString());
+        Product product = new InventoryController().getProductById(productId);
+        if (product == null) {
+            JOptionPane.showMessageDialog(this, "❌ Product not found.");
+            return;
+        }
+        new EditProduct(this, true, product).setVisible(true);
+        loadProductTable();
+    }
+
+    private void toggleSelectedProduct() {
+        int row = TableProduct.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "❌ Please select a product first.");
+            return;
+        }
+
+        int productId = Integer.parseInt(TableProduct.getValueAt(row, 0).toString());
+        String name = TableProduct.getValueAt(row, 1).toString();
+        int stock = Integer.parseInt(TableProduct.getValueAt(row, 4).toString());
+        boolean isActive = "ACTIVE".equalsIgnoreCase(TableProduct.getValueAt(row, 5).toString());
+
+        if (isActive && !confirmDeactivate(name, stock)) return;
+
+        if (new InventoryController().toggleProductStatus(productId) != null) {
+            loadProductTable();
+            updateToggleButtonLabel();
+        } else {
+            JOptionPane.showMessageDialog(this, "Failed to update product status.");
+        }
+    }
+
+    private boolean confirmDeactivate(String name, int stock) {
+        String message = "Deactivate \"" + name + "\"?\n"
+                + "It will be unavailable for Stock In/Out, but its history is kept.";
+        if (stock > 0) {
+            message += "\n\n⚠ This product still has " + stock + " units in stock.";
+        }
+        return JOptionPane.showConfirmDialog(this, message, "Confirm Deactivate",
+                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION;
+    }
+    
+    private void openViewDetailsDialog() {
+        int row = TableProduct.getSelectedRow();
+        if (row < 0) {
+            JOptionPane.showMessageDialog(this, "❌ Please select a product to view.");
+            return;
+        }
+        int productId = Integer.parseInt(TableProduct.getValueAt(row, 0).toString());
+        Product product = new InventoryController().getProductById(productId);
+        if (product == null) {
+            JOptionPane.showMessageDialog(this, "❌ Product not found.");
+            return;
+        }
+        new ViewDetails(this, true, product).setVisible(true);
+    }
+    
     public void updateInventorySummary() {
         int[] totals = new InventoryController().getInventoryTotals();
         jLabel27.setText(String.valueOf(totals[0])); // Total items
@@ -1176,18 +1287,7 @@ public class Main extends javax.swing.JFrame {
 
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
         // TODO add your handling code here:
-        String category = txtCategory.getText();
-        String amountText = txtAmount2.getText();
-        String date = LocalDate.now().toString();
-        double amount = Double.parseDouble(amountText);
-        String notes = txtNotes.getText();
-
-        ExpenseController controller = new ExpenseController();
-        controller.addExpense(category, amount, date, notes);
-        
-        lblStatus2.setText("AR Invoice added successfully!");
-        loadExpenseTable();
-        loadGLTable();
+       addExpense();
     }//GEN-LAST:event_jButton6ActionPerformed
 
     private void txtAmount2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtAmount2ActionPerformed
@@ -1196,19 +1296,7 @@ public class Main extends javax.swing.JFrame {
 
     private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
         // TODO add your handling code here:
-        try (Connection conn = FinanceERP.getConnection();
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(
-                "SELECT SUM(Amount) AS Total FROM Expenses WHERE MONTH(Date) = MONTH(CURRENT_DATE) AND YEAR(Date) = YEAR(CURRENT_DATE)")) {
-
-           if (rs.next()) {
-               double total = rs.getDouble("Total");
-               lblStatus2.setText("Total expenses this month: ₱" + total);
-           }
-       } catch (Exception e) {
-           System.err.println("Totals Error: " + e.getMessage());
-           lblStatus2.setText("Error calculating totals.");
-       }
+       showMonthlyExpenseTotal();
     }//GEN-LAST:event_jButton7ActionPerformed
 
     private void txtDateActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtDateActionPerformed
@@ -1280,93 +1368,26 @@ public class Main extends javax.swing.JFrame {
 
     private void jButton11ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton11ActionPerformed
         // TODO add your handling code here:
-        AddProduct dialog = new AddProduct(this, true);
-        dialog.addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-            public void windowClosed(java.awt.event.WindowEvent e) {
-                loadProductTable(); // refresh product list in Main
-                loadGLTable();
-            }
-        });
-        dialog.setVisible(true);
+        openAddProductDialog();
     }//GEN-LAST:event_jButton11ActionPerformed
 
     private void jButton16ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton16ActionPerformed
-        int row = TableProduct.getSelectedRow();
-        if (row < 0) {
-            JOptionPane.showMessageDialog(this, "Please select a product first.");
-            return;
-        }
-        int productId = (int) TableProduct.getValueAt(row, 0);
-        new ViewDetails(this, true, productId).setVisible(true);
+        openViewDetailsDialog();
     }//GEN-LAST:event_jButton16ActionPerformed
 
     private void jButton15ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton15ActionPerformed
         // TODO add your handling code here:
-        StockInOut dialog = new StockInOut(this, true);
-        dialog.addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-            public void windowClosed(java.awt.event.WindowEvent e) {
-               loadTransactionTable(); // refresh product list in Main
-               loadGLTable();
-           }
-       });
-       dialog.setVisible(true);
+        openStockInOutDialog();
     }//GEN-LAST:event_jButton15ActionPerformed
 
     private void jButton12ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton12ActionPerformed
         // TODO add your handling code here:
-        int row = TableProduct.getSelectedRow();
-        if (row < 0) {
-            JOptionPane.showMessageDialog(this, "❌ Please select a product to edit.");
-            return;
-        }
-
-        int productId = Integer.parseInt(TableProduct.getValueAt(row, 0).toString());
-        Product product = new InventoryController().getProductById(productId);
-        if (product == null) {
-            JOptionPane.showMessageDialog(this, "❌ Product not found.");
-            return;
-        }
-
-        EditProduct dialog = new EditProduct(this, true, product);
-        dialog.setVisible(true); // modal: blocks until closed
-
-        loadProductTable(); // refresh after closing
+        openEditProductDialog();
     }//GEN-LAST:event_jButton12ActionPerformed
 
     private void jButton13ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton13ActionPerformed
         // TODO add your handling code here:
-        int row = TableProduct.getSelectedRow();
-        if (row < 0) {
-            JOptionPane.showMessageDialog(this, "❌ Please select a product first.");
-            return;
-        }
-
-        int productId = Integer.parseInt(TableProduct.getValueAt(row, 0).toString());
-        String name = TableProduct.getValueAt(row, 1).toString();
-        int stock = Integer.parseInt(TableProduct.getValueAt(row, 4).toString());
-        boolean isActive = "ACTIVE".equalsIgnoreCase(TableProduct.getValueAt(row, 5).toString());
-
-        // Only confirm when deactivating
-        if (isActive) {
-            String message = "Deactivate \"" + name + "\"?\n"
-                    + "It will be unavailable for Stock In/Out, but its history is kept.";
-            if (stock > 0) {
-                message += "\n\n⚠ This product still has " + stock + " units in stock.";
-            }
-            int choice = JOptionPane.showConfirmDialog(this, message,
-                    "Confirm Deactivate", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-            if (choice != JOptionPane.YES_OPTION) return;
-        }
-
-        String newStatus = new InventoryController().toggleProductStatus(productId);
-        if (newStatus != null) {
-            loadProductTable();
-            updateToggleButtonLabel();
-        } else {
-            JOptionPane.showMessageDialog(this, "Failed to update product status.");
-        }
+        toggleSelectedProduct();
     }//GEN-LAST:event_jButton13ActionPerformed
 
     /**

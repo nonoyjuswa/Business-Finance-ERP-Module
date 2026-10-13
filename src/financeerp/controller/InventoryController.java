@@ -169,7 +169,7 @@ public class InventoryController {
         return inventoryDAO.updateProduct(existing);
     }
 
-    public List<StockTransaction> getTransactionsByProduct(int productId) {
+    public List<StockTransaction> getTransactionsForProduct(int productId) {
         return inventoryDAO.getTransactionsByProduct(productId);
     }
     
