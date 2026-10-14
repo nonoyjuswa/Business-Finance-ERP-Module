@@ -37,8 +37,20 @@ public class AddProduct extends javax.swing.JDialog {
                 return;
             }
 
-            boolean success = new InventoryController().addProduct(
-                    name, category, Double.parseDouble(priceText), Integer.parseInt(stockText));
+            InventoryController controller = new InventoryController();
+
+            String nameError = controller.validateProductName(name);
+            if (nameError != null) {
+                JOptionPane.showMessageDialog(this, "❌ " + nameError,
+                        "Invalid Product Name", JOptionPane.WARNING_MESSAGE);
+                jTextField1.requestFocus();
+                return;
+            }
+
+            double price = Double.parseDouble(priceText);
+            int stock = Integer.parseInt(stockText);
+
+            boolean success = controller.addProduct(name, category, price, stock);
 
             if (success) {
                 JOptionPane.showMessageDialog(this, "Product added successfully!");

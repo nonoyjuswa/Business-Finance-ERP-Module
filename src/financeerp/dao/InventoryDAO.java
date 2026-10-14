@@ -227,4 +227,19 @@ public class InventoryDAO {
             return false;
         }
     }
+    
+    // ✅ Check if a product name already exists (case-insensitive)
+    public boolean productNameExists(String name) {
+        String sql = "SELECT COUNT(*) FROM Products WHERE LOWER(product_name) = LOWER(?)";
+        try (Connection conn = FinanceERP.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, name);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() && rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return true; // fail safe: block the insert if the check can't run
+        }
+    }
 }

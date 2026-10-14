@@ -11,6 +11,7 @@ import java.time.LocalDate;
 import java.util.List;
 import financeerp.dao.GeneralLedgerDAO;
 import java.sql.SQLException;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -22,6 +23,9 @@ public class InventoryController {
     private static final String ACC_CASH = "Cash";
     private static final String ACC_EQUITY = "Owner's Equity";
     private static final String ACC_COGS = "Cost of Goods Sold";
+    public static final int NAME_MIN_LENGTH = 3;
+    public static final int NAME_MAX_LENGTH = 50;
+    private static final Pattern NAME_PATTERN = Pattern.compile("^[\\p{L}\\p{N}][\\p{L}\\p{N} \\-_.,()/&']*$");
 
     // Posts a balanced debit/credit pair to the General Ledger
     private void postInventoryGL(String debitAcc, String creditAcc, double amount, String notes) {
@@ -40,13 +44,42 @@ public class InventoryController {
     public InventoryController() {
         this.inventoryDAO = new InventoryDAO();
     }
+    
+    public String normalizeProductName(String name) {
+        return name == null ? "" : name.trim().replaceAll("\\s+", " ");
+    }
+    
+    public String validateProductName(String rawName) {
+        String name = normalizeProductName(rawName);
+
+        if (name.isEmpty()) {
+            return "Product name cannot be empty.";
+        }
+        if (name.length() < NAME_MIN_LENGTH || name.length() > NAME_MAX_LENGTH) {
+            return "Product name must be " + NAME_MIN_LENGTH + "-" + NAME_MAX_LENGTH + " characters long.";
+        }
+        if (!NAME_PATTERN.matcher(name).matches()) {
+            return "Product name must start with a letter or number and may only contain "
+                 + "letters, numbers, spaces and - _ . , ( ) / & '";
+        }
+        if (!name.matches(".*\\p{L}.*")) {
+            return "Product name must contain at least one letter.";
+        }
+        if (inventoryDAO.productNameExists(name)) {
+            return "A product named \"" + name + "\" already exists.";
+        }
+        return null;
+    }
 
     // ✅ Add product with validation
     public boolean addProduct(String name, String category, double price, int initialStock) {
-        if (name == null || name.trim().isEmpty()) {
-            System.out.println("❌ Product name cannot be empty.");
+        String nameError = validateProductName(name);
+        if (nameError != null) {
+            System.out.println("❌ " + nameError);
             return false;
         }
+        name = normalizeProductName(name);
+
         if (price < 0) {
             System.out.println("❌ Price cannot be negative.");
             return false;
@@ -57,13 +90,7 @@ public class InventoryController {
         }
 
         Product product = new Product(0, name, category, price, initialStock, "ACTIVE");
-        boolean success = inventoryDAO.addProduct(product);
-
-        if (success && initialStock > 0) {
-            postInventoryGL(ACC_INVENTORY, ACC_EQUITY, price * initialStock,
-                "Initial stock: " + name + " x" + initialStock);
-        }
-        return success;
+        return inventoryDAO.addProduct(product);
     }
 
     // ✅ Get all products
