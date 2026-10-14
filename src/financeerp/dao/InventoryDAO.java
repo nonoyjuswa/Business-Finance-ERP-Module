@@ -18,16 +18,51 @@ import financeerp.model.StockTransaction;
 public class InventoryDAO {
 
     // ✅ Add a new product
+    // ✅ Add a new product and record its initial stock as a Stock IN transaction
     public boolean addProduct(Product product) {
-        String sql = "INSERT INTO Products (product_name, category, unit_price, current_stock, status) VALUES (?, ?, ?, ?, ?)";
-        try (Connection conn = FinanceERP.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, product.getProductName());
-            ps.setString(2, product.getCategory());
-            ps.setDouble(3, product.getUnitPrice());
-            ps.setInt(4, product.getCurrentStock());
-            ps.setString(5, product.getStatus());
-            return ps.executeUpdate() > 0;
+        String insertProduct = "INSERT INTO Products (product_name, category, unit_price, current_stock, status) VALUES (?, ?, ?, ?, ?)";
+        String insertTx = "INSERT INTO StockTransactions (product_id, transaction_type, quantity, transaction_date, remarks) VALUES (?, 'IN', ?, ?, ?)";
+
+        try (Connection conn = FinanceERP.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                int productId;
+                try (PreparedStatement ps = conn.prepareStatement(insertProduct, Statement.RETURN_GENERATED_KEYS)) {
+                    ps.setString(1, product.getProductName());
+                    ps.setString(2, product.getCategory());
+                    ps.setDouble(3, product.getUnitPrice());
+                    ps.setInt(4, product.getCurrentStock());
+                    ps.setString(5, product.getStatus());
+                    if (ps.executeUpdate() == 0) {
+                        conn.rollback();
+                        return false;
+                    }
+                    try (ResultSet keys = ps.getGeneratedKeys()) {
+                        if (!keys.next()) {
+                            conn.rollback();
+                            return false;
+                        }
+                        productId = keys.getInt(1);
+                    }
+                }
+
+                // Record the initial stock in the transaction history
+                if (product.getCurrentStock() > 0) {
+                    try (PreparedStatement ps = conn.prepareStatement(insertTx)) {
+                        ps.setInt(1, productId);
+                        ps.setInt(2, product.getCurrentStock());
+                        ps.setDate(3, Date.valueOf(java.time.LocalDate.now()));
+                        ps.setString(4, "Initial stock");
+                        ps.executeUpdate();
+                    }
+                }
+
+                conn.commit();
+                return true;
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            }
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
