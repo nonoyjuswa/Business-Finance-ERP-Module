@@ -7,7 +7,7 @@ package financeerp.controller;
 import financeerp.dao.InventoryDAO;
 import financeerp.model.Product;
 import financeerp.model.StockTransaction;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import financeerp.dao.GeneralLedgerDAO;
 import java.sql.SQLException;
@@ -32,7 +32,7 @@ public class InventoryController {
         if (amount <= 0) return;
         try {
             new GeneralLedgerDAO().postToGL(
-                LocalDate.now().toString(),
+                LocalDateTime.now().toString(),
                 debitAcc, amount,
                 creditAcc, amount,
                 "Inventory", notes);
@@ -127,7 +127,7 @@ public class InventoryController {
             return false;
         }
 
-        StockTransaction tx = new StockTransaction(productId, "IN", quantity, LocalDate.now(), remarks);
+        StockTransaction tx = new StockTransaction(productId, "IN", quantity, LocalDateTime.now(), remarks);
         boolean success = inventoryDAO.addTransaction(tx);
         if (success && inventoryDAO.updateStock(productId, quantity, "IN")) {
             postInventoryGL(ACC_INVENTORY, ACC_CASH, quantity * product.getUnitPrice(),
@@ -161,7 +161,7 @@ public class InventoryController {
             return false;
         }
 
-        StockTransaction tx = new StockTransaction(productId, "OUT", quantity, LocalDate.now(), remarks);
+        StockTransaction tx = new StockTransaction(productId, "OUT", quantity, LocalDateTime.now(), remarks);
         boolean success = inventoryDAO.addTransaction(tx);
         if (success && inventoryDAO.updateStock(productId, quantity, "OUT")) {
             postInventoryGL(ACC_COGS, ACC_INVENTORY, quantity * product.getUnitPrice(),

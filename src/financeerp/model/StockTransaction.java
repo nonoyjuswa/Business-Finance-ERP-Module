@@ -8,7 +8,7 @@ import financeerp.FinanceERP;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.time.LocalDate;
+import java.time.LocalDateTime; 
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 
@@ -21,11 +21,11 @@ public class StockTransaction {
     private int productId;
     private String transactionType; // IN or OUT
     private int quantity;
-    private LocalDate transactionDate;
+    private LocalDateTime transactionDate;
     private String remarks;
     private Object tblTransactions;
 
-    public StockTransaction(int productId, String transactionType, int quantity, LocalDate transactionDate, String remarks) {
+    public StockTransaction(int productId, String transactionType, int quantity, LocalDateTime transactionDate, String remarks) {
         this.productId = productId;
         this.transactionType = transactionType;
         this.quantity = quantity;
@@ -37,14 +37,14 @@ public class StockTransaction {
     public int getProductId() { return productId; }
     public String getTransactionType() { return transactionType; }
     public int getQuantity() { return quantity; }
-    public LocalDate getTransactionDate() { return transactionDate; }
+    public LocalDateTime getTransactionDate() { return transactionDate; }
     public String getRemarks() { return remarks; }
 
     public void setTransactionId(int transactionId) { this.transactionId = transactionId; }
     public void setProductId(int productId) { this.productId = productId; }
     public void setTransactionType(String transactionType) { this.transactionType = transactionType; }
     public void setQuantity(int quantity) { this.quantity = quantity; }
-    public void setTransactionDate(LocalDate transactionDate) { this.transactionDate = transactionDate; }
+    public void setTransactionDate(LocalDateTime transactionDate) { this.transactionDate = transactionDate; }
     public void setRemarks(String remarks) { this.remarks = remarks; }
 
     @Override

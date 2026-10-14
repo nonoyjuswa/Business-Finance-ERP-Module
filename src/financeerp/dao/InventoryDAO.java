@@ -51,7 +51,7 @@ public class InventoryDAO {
                     try (PreparedStatement ps = conn.prepareStatement(insertTx)) {
                         ps.setInt(1, productId);
                         ps.setInt(2, product.getCurrentStock());
-                        ps.setDate(3, Date.valueOf(java.time.LocalDate.now()));
+                        ps.setTimestamp(3, Timestamp.valueOf(java.time.LocalDateTime.now()));
                         ps.setString(4, "Initial stock");
                         ps.executeUpdate();
                     }
@@ -101,7 +101,7 @@ public class InventoryDAO {
             ps.setInt(1, tx.getProductId());
             ps.setString(2, tx.getTransactionType());
             ps.setInt(3, tx.getQuantity());
-            ps.setDate(4, Date.valueOf(tx.getTransactionDate()));
+            ps.setTimestamp(4, Timestamp.valueOf(tx.getTransactionDate()));
             ps.setString(5, tx.getRemarks());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -182,7 +182,7 @@ public class InventoryDAO {
                         rs.getInt("product_id"),
                         rs.getString("transaction_type"),
                         rs.getInt("quantity"),
-                        rs.getDate("transaction_date").toLocalDate(),
+                        rs.getTimestamp("transaction_date").toLocalDateTime(),
                         rs.getString("remarks")
                     );
                     tx.setTransactionId(rs.getInt("transaction_id"));

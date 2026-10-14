@@ -170,6 +170,8 @@ public class Main extends javax.swing.JFrame {
 
             DefaultTableModel model = (DefaultTableModel) TableStock.getModel(); // your transaction JTable
             model.setRowCount(0); // clear old rows
+            
+            java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd hh:mm a");
 
             while (rs.next()) {
                 model.addRow(new Object[]{
@@ -177,7 +179,7 @@ public class Main extends javax.swing.JFrame {
                     rs.getString("transaction_type"),
                     rs.getString("product_name"),
                     rs.getInt("quantity"),
-                    rs.getDate("transaction_date"),
+                    rs.getTimestamp("transaction_date").toLocalDateTime().format(fmt),
                     rs.getString("remarks")
                 });
             }
