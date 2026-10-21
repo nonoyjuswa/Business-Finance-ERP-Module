@@ -184,7 +184,7 @@ public class InventoryController {
         return inventoryDAO.getProductById(productId);
     }
     
-    public boolean updateProduct(int productId, String name, String category, double price, String status) {
+    public boolean updateProduct(int productId, String name, String category, double price, String status, int locationId) {
         if (name == null || name.trim().isEmpty()) {
             System.out.println("❌ Product name cannot be empty.");
             return false;
@@ -202,6 +202,7 @@ public class InventoryController {
         existing.setCategory(category);
         existing.setUnitPrice(price);
         existing.setStatus(status);
+        existing.setLocationId(locationId); 
         return inventoryDAO.updateProduct(existing);
     }
 
