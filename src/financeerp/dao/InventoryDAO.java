@@ -20,8 +20,8 @@ public class InventoryDAO {
     // ✅ Add a new product
     // ✅ Add a new product and record its initial stock as a Stock IN transaction
     public boolean addProduct(Product product) {
-        String insertProduct = "INSERT INTO Products (product_name, category, unit_price, current_stock, status) VALUES (?, ?, ?, ?, ?)";
-        String insertTx = "INSERT INTO StockTransactions (product_id, transaction_type, quantity, transaction_date, remarks) VALUES (?, 'IN', ?, ?, ?)";
+        String insertProduct = "INSERT INTO Products (product_name, category, unit_price, current_stock, status, location_id, created_by) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String insertTx = "INSERT INTO StockTransactions (product_id, transaction_type, quantity, transaction_date, remarks, party_name, encoded_by) VALUES (?, 'IN', ?, ?, ?, ?, ?)";
 
         try (Connection conn = FinanceERP.getConnection()) {
             conn.setAutoCommit(false);
@@ -33,6 +33,8 @@ public class InventoryDAO {
                     ps.setDouble(3, product.getUnitPrice());
                     ps.setInt(4, product.getCurrentStock());
                     ps.setString(5, product.getStatus());
+                    ps.setInt(6, product.getLocationId());
+                    ps.setString(7, product.getCreatedBy());
                     if (ps.executeUpdate() == 0) {
                         conn.rollback();
                         return false;
@@ -46,13 +48,14 @@ public class InventoryDAO {
                     }
                 }
 
-                // Record the initial stock in the transaction history
                 if (product.getCurrentStock() > 0) {
                     try (PreparedStatement ps = conn.prepareStatement(insertTx)) {
                         ps.setInt(1, productId);
                         ps.setInt(2, product.getCurrentStock());
                         ps.setTimestamp(3, Timestamp.valueOf(java.time.LocalDateTime.now()));
                         ps.setString(4, "Initial stock");
+                        ps.setString(5, "Initial stock");
+                        ps.setString(6, product.getCreatedBy());
                         ps.executeUpdate();
                     }
                 }
@@ -68,11 +71,12 @@ public class InventoryDAO {
             return false;
         }
     }
-
     // ✅ Get all products
     public List<Product> getAllProducts() {
         List<Product> products = new ArrayList<>();
-        String sql = "SELECT * FROM Products WHERE status='ACTIVE'";
+        String sql = "SELECT p.*, COALESCE(l.location_name, 'Unassigned') AS location_name " +
+                     "FROM Products p LEFT JOIN Locations l ON p.location_id = l.location_id " +
+                     "WHERE p.status='ACTIVE'";
         try (Connection conn = FinanceERP.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -85,6 +89,9 @@ public class InventoryDAO {
                     rs.getInt("current_stock"),
                     rs.getString("status")
                 );
+                p.setLocationId(rs.getInt("location_id"));
+                p.setLocationName(rs.getString("location_name"));
+                p.setCreatedBy(rs.getString("created_by"));
                 products.add(p);
             }
         } catch (SQLException e) {
@@ -92,41 +99,64 @@ public class InventoryDAO {
         }
         return products;
     }
-
-    // ✅ Add stock transaction (IN/OUT)
-    public boolean addTransaction(StockTransaction tx) {
-        String sql = "INSERT INTO StockTransactions (product_id, transaction_type, quantity, transaction_date, remarks) VALUES (?, ?, ?, ?, ?)";
+    
+    public java.util.LinkedHashMap<Integer, String> getAllLocations() {
+        java.util.LinkedHashMap<Integer, String> map = new java.util.LinkedHashMap<>();
         try (Connection conn = FinanceERP.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, tx.getProductId());
-            ps.setString(2, tx.getTransactionType());
-            ps.setInt(3, tx.getQuantity());
-            ps.setTimestamp(4, Timestamp.valueOf(tx.getTransactionDate()));
-            ps.setString(5, tx.getRemarks());
-            return ps.executeUpdate() > 0;
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT * FROM Locations ORDER BY location_name")) {
+            while (rs.next()) {
+                map.put(rs.getInt("location_id"), rs.getString("location_name"));
+            }
         } catch (SQLException e) {
             e.printStackTrace();
-            return false;
         }
+        return  map;
     }
+    
+    public boolean recordStockMovement(StockTransaction tx) {
+        String insertSql = "INSERT INTO StockTransactions (product_id, transaction_type, quantity, transaction_date, remarks, party_name, encoded_by) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        boolean isIn = tx.getTransactionType().equals("IN");
+        String updateSql = isIn
+            ? "UPDATE Products SET current_stock = current_stock + ? WHERE product_id = ?"
+            : "UPDATE Products SET current_stock = current_stock - ? WHERE product_id = ? AND current_stock >= ?";
 
-    // ✅ Update product stock after transaction
-    public boolean updateStock(int productId, int quantity, String type) {
-        String sql = (type.equals("IN"))
-            ? "UPDATE Products SET current_stock = current_stock + ? WHERE product_id=?"
-            : "UPDATE Products SET current_stock = current_stock - ? WHERE product_id=? AND current_stock >= ?";
-        try (Connection conn = FinanceERP.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, quantity);
-            ps.setInt(2, productId);
-            if (type.equals("OUT")) ps.setInt(3, quantity); // prevent negative stock
-            return ps.executeUpdate() > 0;
+        try (Connection conn = FinanceERP.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement ins = conn.prepareStatement(insertSql);
+                 PreparedStatement upd = conn.prepareStatement(updateSql)) {
+
+                ins.setInt(1, tx.getProductId());
+                ins.setString(2, tx.getTransactionType());
+                ins.setInt(3, tx.getQuantity());
+                ins.setTimestamp(4, Timestamp.valueOf(tx.getTransactionDate()));
+                ins.setString(5, tx.getRemarks());
+                ins.setString(6, tx.getPartyName());
+                ins.setString(7, tx.getEncodedBy());
+                ins.executeUpdate();
+
+                upd.setInt(1, tx.getQuantity());
+                upd.setInt(2, tx.getProductId());
+                if (!isIn) upd.setInt(3, tx.getQuantity());
+
+                if (upd.executeUpdate() == 0) {
+                    conn.rollback();
+                    return false;
+                }
+                conn.commit();
+                return true;
+            } catch (SQLException e) {
+                conn.rollback();
+                e.printStackTrace();
+                return false;
+            }
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
         }
     }
     
+
     // ✅ Get a single product by ID (no status filter, so inactive ones still open)
     public Product getProductById(int productId) {
         String sql = "SELECT * FROM Products WHERE product_id=?";
@@ -229,19 +259,25 @@ public class InventoryDAO {
     // ✅ Get ALL products (active + inactive), used only for the Inventory table in Main
     public List<Product> getAllProductsIncludingInactive() {
         List<Product> products = new ArrayList<>();
-        String sql = "SELECT * FROM Products ORDER BY product_id";
+        String sql = "SELECT p.*, COALESCE(l.location_name, 'Unassigned') AS location_name " +
+                     "FROM Products p LEFT JOIN Locations l ON p.location_id = l.location_id " +
+                     "ORDER BY p.product_id";
         try (Connection conn = FinanceERP.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                products.add(new Product(
+                Product p = new Product(
                     rs.getInt("product_id"),
                     rs.getString("product_name"),
                     rs.getString("category"),
                     rs.getDouble("unit_price"),
                     rs.getInt("current_stock"),
                     rs.getString("status")
-                ));
+                );
+                p.setLocationId(rs.getInt("location_id"));
+                p.setLocationName(rs.getString("location_name"));
+                p.setCreatedBy(rs.getString("created_by"));
+                products.add(p);
             }
         } catch (SQLException e) {
             e.printStackTrace();

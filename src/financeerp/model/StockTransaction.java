@@ -23,7 +23,8 @@ public class StockTransaction {
     private int quantity;
     private LocalDateTime transactionDate;
     private String remarks;
-    private Object tblTransactions;
+    private String partyName;
+    private String encodedBy;
 
     public StockTransaction(int productId, String transactionType, int quantity, LocalDateTime transactionDate, String remarks) {
         this.productId = productId;
@@ -46,6 +47,11 @@ public class StockTransaction {
     public void setQuantity(int quantity) { this.quantity = quantity; }
     public void setTransactionDate(LocalDateTime transactionDate) { this.transactionDate = transactionDate; }
     public void setRemarks(String remarks) { this.remarks = remarks; }
+    
+    public String getPartyName() { return partyName; }
+    public String getEncodedBy() { return encodedBy; }
+    public void setPartyName(String partyName) { this.partyName = partyName; }
+    public void setEncodedBy(String encodedBy) { this.encodedBy = encodedBy; }
 
     @Override
     public String toString() {

@@ -143,7 +143,8 @@ public class Main extends javax.swing.JFrame {
                 p.getCategory(),
                 p.getUnitPrice(),
                 p.getCurrentStock(),
-                p.getStatus()
+                p.getStatus(),
+                p.getLocationName()
             });
         }
         updateInventorySummary();
@@ -164,9 +165,10 @@ public class Main extends javax.swing.JFrame {
         try (Connection conn = FinanceERP.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery("SELECT t.transaction_id, p.product_name, t.transaction_type, " +
-             "t.quantity, t.transaction_date, t.remarks " +
-             "FROM StockTransactions t " +
-             "JOIN Products p ON t.product_id = p.product_id")) {
+                "t.quantity, t.transaction_date, t.remarks, t.party_name, t.encoded_by " +
+                "FROM StockTransactions t " +
+                "JOIN Products p ON t.product_id = p.product_id " +
+                "ORDER BY t.transaction_id DESC")) {
 
             DefaultTableModel model = (DefaultTableModel) TableStock.getModel(); // your transaction JTable
             model.setRowCount(0); // clear old rows
@@ -180,7 +182,9 @@ public class Main extends javax.swing.JFrame {
                     rs.getString("product_name"),
                     rs.getInt("quantity"),
                     rs.getTimestamp("transaction_date").toLocalDateTime().format(fmt),
-                    rs.getString("remarks")
+                    rs.getString("remarks"),
+                    rs.getString("party_name"),
+                    rs.getString("encoded_by")
                 });
             }
             updateInventorySummary();
@@ -515,7 +519,7 @@ public class Main extends javax.swing.JFrame {
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addContainerGap()
                                 .addComponent(lblStatus)))
-                        .addGap(0, 134, Short.MAX_VALUE))
+                        .addGap(0, 534, Short.MAX_VALUE))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING))
                 .addContainerGap())
         );
@@ -626,7 +630,7 @@ public class Main extends javax.swing.JFrame {
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addComponent(lblStatus1)
-                        .addGap(0, 609, Short.MAX_VALUE))
+                        .addGap(0, 1009, Short.MAX_VALUE))
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel10)
@@ -652,7 +656,7 @@ public class Main extends javax.swing.JFrame {
                                 .addComponent(cmbStatus, javax.swing.GroupLayout.PREFERRED_SIZE, 154, javax.swing.GroupLayout.PREFERRED_SIZE))
                             .addGroup(jPanel2Layout.createSequentialGroup()
                                 .addComponent(txtCustomerName, javax.swing.GroupLayout.PREFERRED_SIZE, 141, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 119, Short.MAX_VALUE)
+                                .addGap(18, 519, Short.MAX_VALUE)
                                 .addComponent(jLabel8)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(txtInvoiceNumber1, javax.swing.GroupLayout.PREFERRED_SIZE, 154, javax.swing.GroupLayout.PREFERRED_SIZE)))
@@ -783,7 +787,7 @@ public class Main extends javax.swing.JFrame {
                             .addComponent(jScrollPane3)
                             .addGroup(jPanel3Layout.createSequentialGroup()
                                 .addComponent(lblStatus2)
-                                .addGap(0, 597, Short.MAX_VALUE)))))
+                                .addGap(0, 997, Short.MAX_VALUE)))))
                 .addContainerGap())
         );
         jPanel3Layout.setVerticalGroup(
@@ -916,13 +920,13 @@ public class Main extends javax.swing.JFrame {
                     .addGroup(jPanel4Layout.createSequentialGroup()
                         .addContainerGap()
                         .addComponent(GLStatus)))
-                .addContainerGap(74, Short.MAX_VALUE))
+                .addContainerGap(474, Short.MAX_VALUE))
             .addComponent(jSeparator8)
             .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(jPanel4Layout.createSequentialGroup()
                     .addGap(24, 24, 24)
                     .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 559, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addContainerGap(85, Short.MAX_VALUE)))
+                    .addContainerGap(485, Short.MAX_VALUE)))
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -967,7 +971,7 @@ public class Main extends javax.swing.JFrame {
 
             },
             new String [] {
-                "ID", "Product Name", "Title 3", "Price", "Stock", "Status"
+                "ID", "Product Name", "Category", "Price", "Stock", "Status", "Location"
             }
         ));
         jScrollPane5.setViewportView(TableProduct);
@@ -977,7 +981,7 @@ public class Main extends javax.swing.JFrame {
 
             },
             new String [] {
-                "ID", "Type", "Product Name", "Quantity", "Date", "Remarks"
+                "ID", "Type", "Product Name", "Quantity", "Date", "Remarks", "Party", "Encoded by"
             }
         ));
         jScrollPane6.setViewportView(TableStock);
@@ -1063,7 +1067,7 @@ public class Main extends javax.swing.JFrame {
                         .addGap(18, 18, 18)
                         .addComponent(jButton13)
                         .addGap(44, 44, 44))
-                    .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 656, Short.MAX_VALUE)
+                    .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 1056, Short.MAX_VALUE)
                     .addGroup(jPanel5Layout.createSequentialGroup()
                         .addComponent(jLabel22)
                         .addGap(0, 0, Short.MAX_VALUE))
@@ -1133,7 +1137,9 @@ public class Main extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jTabbedPane2, javax.swing.GroupLayout.Alignment.TRAILING)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jTabbedPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 1073, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
