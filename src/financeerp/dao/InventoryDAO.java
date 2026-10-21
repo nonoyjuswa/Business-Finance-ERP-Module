@@ -159,7 +159,9 @@ public class InventoryDAO {
 
     // ✅ Get a single product by ID (no status filter, so inactive ones still open)
     public Product getProductById(int productId) {
-        String sql = "SELECT * FROM Products WHERE product_id=?";
+        String sql = "SELECT p.*, COALESCE(l.location_name, 'Unassigned') AS location_name " +
+                     "FROM Products p LEFT JOIN Locations l ON p.location_id = l.location_id " +
+                     "WHERE p.product_id=?";
         try (Connection conn = FinanceERP.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, productId);
@@ -174,6 +176,7 @@ public class InventoryDAO {
                         rs.getString("status")
                     );
                     p.setLocationId(rs.getInt("location_id"));
+                    p.setLocationName(rs.getString("location_name"));
                     p.setCreatedBy(rs.getString("created_by"));
                     return p;
                 }
@@ -224,6 +227,9 @@ public class InventoryDAO {
                         rs.getString("remarks")
                     );
                     tx.setTransactionId(rs.getInt("transaction_id"));
+                    tx.setPartyName(rs.getString("party_name"));
+                    tx.setEncodedBy(rs.getString("encoded_by"));
+                    list.add(tx);
                     list.add(tx);
                 }
             }
