@@ -16,6 +16,9 @@ public class Product {
     private double unitPrice;
     private int currentStock;
     private String status;
+    private int locationId;
+    private String locationName;
+    private String createdBy;
 
     public Product(int productId, String productName, String category, double unitPrice, int currentStock, String status) {
         this.productId = productId;
@@ -39,6 +42,13 @@ public class Product {
     public void setUnitPrice(double unitPrice) { this.unitPrice = unitPrice; }
     public void setCurrentStock(int currentStock) { this.currentStock = currentStock; }
     public void setStatus(String status) { this.status = status; }
+    
+    public int getLocationId() { return locationId; }
+    public String getLocationName() { return locationName; }
+    public String getCreatedBy() { return createdBy; }
+    public void setLocationId(int locationId) { this.locationId = locationId; }
+    public void setLocationName(String locationName) { this.locationName = locationName; }
+    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
 
     @Override
     public String toString() {

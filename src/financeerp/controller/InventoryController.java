@@ -72,7 +72,7 @@ public class InventoryController {
     }
 
     // ✅ Add product with validation
-    public boolean addProduct(String name, String category, double price, int initialStock) {
+    public boolean addProduct(String name, String category, double price, int initialStock, int locationId, String createdBy) {
         String nameError = validateProductName(name);
         if (nameError != null) {
             System.out.println("❌ " + nameError);
@@ -90,9 +90,15 @@ public class InventoryController {
         }
 
         Product product = new Product(0, name, category, price, initialStock, "ACTIVE");
+        product.setLocationId(locationId);
+        product.setCreatedBy(createdBy);
         return inventoryDAO.addProduct(product);
     }
-
+    
+    public java.util.Map<Integer, String> getLocations() {
+        return inventoryDAO.getAllLocations();
+    }
+    
     // ✅ Get all products
     public List<Product> getProducts() {
         return inventoryDAO.getAllProducts();
@@ -115,7 +121,7 @@ public class InventoryController {
     }
 
     // ✅ Stock IN
-    public boolean stockIn(int productId, int quantity, String remarks) {
+    public boolean stockIn(int productId, int quantity, String remarks, String partyName, String encodedBy) {
         if (quantity <= 0) {
             System.out.println("❌ Quantity must be greater than zero.");
             return false;
@@ -128,23 +134,24 @@ public class InventoryController {
         }
 
         StockTransaction tx = new StockTransaction(productId, "IN", quantity, LocalDateTime.now(), remarks);
-        boolean success = inventoryDAO.addTransaction(tx);
-        if (success && inventoryDAO.updateStock(productId, quantity, "IN")) {
+        tx.setPartyName(partyName);
+        tx.setEncodedBy(encodedBy);
+
+        if (inventoryDAO.recordStockMovement(tx)) {
             postInventoryGL(ACC_INVENTORY, ACC_CASH, quantity * product.getUnitPrice(),
                 "Stock IN: " + product.getProductName() + " x" + quantity
                 + (remarks.isEmpty() ? "" : " (" + remarks + ")"));
+            return true;
         }
-        return success;
+        return false;
     }
 
-    // ✅ Stock OUT
-    public boolean stockOut(int productId, int quantity, String remarks) {
+    public boolean stockOut(int productId, int quantity, String remarks, String partyName, String encodedBy) {
         if (quantity <= 0) {
             System.out.println("❌ Quantity must be greater than zero.");
             return false;
         }
 
-        // Check current stock first
         Product product = inventoryDAO.getAllProducts()
                 .stream()
                 .filter(p -> p.getProductId() == productId)
@@ -155,20 +162,22 @@ public class InventoryController {
             System.out.println("❌ Product not found.");
             return false;
         }
-
         if (product.getCurrentStock() < quantity) {
             System.out.println("❌ Insufficient stock. Available: " + product.getCurrentStock());
             return false;
         }
 
         StockTransaction tx = new StockTransaction(productId, "OUT", quantity, LocalDateTime.now(), remarks);
-        boolean success = inventoryDAO.addTransaction(tx);
-        if (success && inventoryDAO.updateStock(productId, quantity, "OUT")) {
+        tx.setPartyName(partyName);
+        tx.setEncodedBy(encodedBy);
+
+        if (inventoryDAO.recordStockMovement(tx)) {
             postInventoryGL(ACC_COGS, ACC_INVENTORY, quantity * product.getUnitPrice(),
                 "Stock OUT: " + product.getProductName() + " x" + quantity
                 + (remarks.isEmpty() ? "" : " (" + remarks + ")"));
+            return true;
         }
-        return success;
+        return false;
     }
     
     public Product getProductById(int productId) {
