@@ -165,7 +165,7 @@ public class InventoryDAO {
             ps.setInt(1, productId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return new Product(
+                    Product p = new Product(
                         rs.getInt("product_id"),
                         rs.getString("product_name"),
                         rs.getString("category"),
@@ -173,6 +173,9 @@ public class InventoryDAO {
                         rs.getInt("current_stock"),
                         rs.getString("status")
                     );
+                    p.setLocationId(rs.getInt("location_id"));
+                    p.setCreatedBy(rs.getString("created_by"));
+                    return p;
                 }
             }
         } catch (SQLException e) {
@@ -182,14 +185,19 @@ public class InventoryDAO {
     }
     
     public boolean updateProduct(Product product) {
-        String sql = "UPDATE Products SET product_name=?, category=?, unit_price=?, status=? WHERE product_id=?";
+        String sql = "UPDATE Products SET product_name=?, category=?, unit_price=?, status=?, location_id=? WHERE product_id=?";
         try (Connection conn = FinanceERP.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, product.getProductName());
             ps.setString(2, product.getCategory());
             ps.setDouble(3, product.getUnitPrice());
             ps.setString(4, product.getStatus());
-            ps.setInt(5, product.getProductId());
+            if (product.getLocationId() > 0) {
+                ps.setInt(5, product.getLocationId());
+            } else {
+                ps.setNull(5, Types.INTEGER);   // no location: store NULL, not 0
+            }
+            ps.setInt(6, product.getProductId());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
